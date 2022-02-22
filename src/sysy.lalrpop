@@ -1,0 +1,218 @@
+use crate::parser::Statistics;
+
+grammar(stat: &mut Statistics);
+
+match {
+  r"\s*" => {},
+  r"//[^\n\r]*[\n\r]*" => {},
+  r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/" => {},
+  _
+}
+
+pub CompUnit: () = <(GlobalItem)*> => ();
+
+GlobalItem: () = {
+  Decl => (),
+  FuncDef => (),
+}
+
+Decl: () = {
+  ConstDecl => (),
+  VarDecl => (),
+}
+
+ConstDecl: () = {
+  "const" "int" <ConstDef> <("," <ConstDef>)*> ";" => {
+    stat.grammar.const_decls += 1;
+  },
+}
+
+ConstDef: () = {
+  <id: Ident> <dims: ("[" <ConstExp> "]")*> "=" <init: ConstInitVal> => {
+    if dims.is_empty() {
+      stat.grammar.const_defs += 1;
+    } else {
+      stat.grammar.const_array_defs += 1;
+    }
+  },
+}
+
+ConstInitVal: () = {
+  ConstExp => stat.grammar.const_init_exprs += 1,
+  "{" "}" => stat.grammar.const_init_lists += 1,
+  "{" <ConstInitVal> <("," <ConstInitVal>)*> "}" => stat.grammar.const_init_lists += 1,
+}
+
+VarDecl: () = {
+  "int" <VarDef> <("," <VarDef>)*> ";" => stat.grammar.var_decls += 1,
+}
+
+VarDef: () = {
+  <id: Ident> <dims: ("[" <ConstExp> "]")*> <init: ("=" <InitVal>)?> => {
+    if dims.is_empty() {
+      stat.grammar.var_defs += 1;
+    } else {
+      stat.grammar.var_array_defs += 1;
+    }
+  },
+}
+
+InitVal: () = {
+  Exp => stat.grammar.var_init_exprs += 1,
+  "{" "}" => stat.grammar.var_init_lists += 1,
+  "{" <InitVal> <("," <InitVal>)*> "}" => stat.grammar.var_init_lists += 1,
+}
+
+FuncDef: () = {
+  <FuncDefHead> ")" <Block> => (),
+  <h: FuncDefHead> <p: FuncFParam> <params: ("," <FuncFParam>)*> ")" <b: Block> => {
+    let func_params = params.len() + 1;
+    if func_params > stat.grammar.func_params_max {
+      stat.grammar.func_params_max = func_params;
+    }
+  }
+}
+
+FuncDefHead: () = {
+  "void" <Ident> "(" => stat.grammar.void_func_defs += 1,
+  "int" <Ident> "(" => stat.grammar.int_func_defs += 1,
+}
+
+FuncFParam: () = {
+  "int" <id: Ident> <dims: ("[" "]" <("[" <ConstExp> "]")*>)?> => {
+    if dims.is_none() {
+      stat.grammar.func_params += 1;
+    } else {
+      stat.grammar.func_array_params += 1;
+    }
+  },
+}
+
+Block: () = "{" <(BlockItem)*> "}" => ();
+
+BlockItem: () = {
+  Decl => stat.grammar.local_decls += 1,
+  Stmt => (),
+}
+
+Stmt: () = {
+  MatchedStmt => (),
+  OpenStmt => (),
+}
+
+MatchedStmt: () = {
+  <LVal> "=" <Exp> ";" => stat.grammar.assign_stmts += 1,
+  <(Exp)?> ";" => stat.grammar.expr_stmts += 1,
+  Block => stat.grammar.block_stmts += 1,
+  "if" "(" <Exp> ")" <MatchedStmt> "else" <MatchedStmt> => {
+    stat.grammar.if_else_stmts += 1;
+  },
+  "while" "(" <Exp> ")" <MatchedStmt> => stat.grammar.while_stmts += 1,
+  "break" ";" => stat.grammar.break_stmts += 1,
+  "continue" ";" => stat.grammar.continue_stmts += 1,
+  "return" <(Exp)?> ";" => stat.grammar.return_stmts += 1,
+}
+
+OpenStmt: () = {
+  "if" "(" <Exp> ")" <Stmt> => stat.grammar.if_stmts += 1,
+  "if" "(" <Exp> ")" <MatchedStmt> "else" <OpenStmt> => {
+    stat.grammar.if_else_stmts += 1;
+  },
+  "while" "(" <Exp> ")" <OpenStmt> => stat.grammar.while_stmts += 1,
+}
+
+Exp: () = <LOrExp> => ();
+
+LVal: () = <id: Ident> <indices: ("[" <Exp> "]")*> => {
+  if !indices.is_empty() {
+    stat.grammar.array_accesses += 1;
+  }
+};
+
+PrimaryExp: () = {
+  "(" <Exp> ")" => stat.grammar.paren_exprs += 1,
+  LVal => (),
+  Number => (),
+}
+
+UnaryExp: () = {
+  PrimaryExp => (),
+  <Ident> "(" ")" => stat.grammar.func_calls += 1,
+  <Ident> "(" <Exp> <("," <Exp>)*> ")" => stat.grammar.func_calls += 1,
+  <UnaryOp> <UnaryExp> => stat.grammar.unary_exprs += 1,
+}
+
+MulExp: () = {
+  UnaryExp => (),
+  <MulExp> <MulOp> <UnaryExp> => stat.grammar.mul_exprs += 1,
+}
+
+AddExp: () = {
+  MulExp => (),
+  <AddExp> <AddOp> <MulExp> => stat.grammar.add_exprs += 1,
+}
+
+RelExp: () = {
+  AddExp => (),
+  <RelExp> <RelOp> <AddExp> => stat.grammar.rel_exprs += 1,
+}
+
+EqExp: () = {
+  RelExp => (),
+  <EqExp> <EqOp> <RelExp> => stat.grammar.eq_exprs += 1,
+}
+
+LAndExp: () = {
+  EqExp => (),
+  <LAndExp> "&&" <EqExp> => {
+    stat.lexical.binary_ops += 1;
+    stat.grammar.land_exprs += 1;
+  },
+}
+
+LOrExp: () = {
+  LAndExp => (),
+  <LOrExp> "||" <LAndExp> => {
+    stat.lexical.binary_ops += 1;
+    stat.grammar.lor_exprs += 1;
+  },
+}
+
+ConstExp: () = <Exp> => stat.grammar.const_exprs += 1;
+
+Ident: () = r"[_a-zA-Z][_a-zA-Z0-9]*" => stat.lexical.ids += 1;
+
+Number: () = {
+  r"[1-9][0-9]*" => stat.lexical.decimals += 1,
+  r"0[0-7]*" => stat.lexical.octals += 1,
+  r"0[xX][0-9a-fA-F]+" => stat.lexical.hexadecimals += 1,
+}
+
+UnaryOp: () = {
+  "+" => stat.lexical.unary_ops += 1,
+  "-" => stat.lexical.unary_ops += 1,
+  "!" => stat.lexical.unary_ops += 1,
+}
+
+MulOp: () = {
+  "*" => stat.lexical.binary_ops += 1,
+  "/" => stat.lexical.binary_ops += 1,
+  "%" => stat.lexical.binary_ops += 1,
+}
+
+AddOp: () = {
+  "+" => stat.lexical.binary_ops += 1,
+  "-" => stat.lexical.binary_ops += 1,
+}
+
+RelOp: () = {
+  "<" => stat.lexical.binary_ops += 1,
+  ">" => stat.lexical.binary_ops += 1,
+  "<=" => stat.lexical.binary_ops += 1,
+  ">=" => stat.lexical.binary_ops += 1,
+}
+
+EqOp: () = {
+  "==" => stat.lexical.binary_ops += 1,
+  "!=" => stat.lexical.binary_ops += 1,
+}
