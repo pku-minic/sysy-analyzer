@@ -24,7 +24,12 @@ fn try_main() -> Result<(), Error> {
   // parse the input file
   let stat = parse(&input)?;
   // write the statistics to the output file
-  fs::write(output, stat).map_err(Error::File)
+  if let Some(output) = output {
+    fs::write(output, stat).map_err(Error::File)
+  } else {
+    println!("{}", stat);
+    Ok(())
+  }
 }
 
 /// Error returned by the `main` procedure.
@@ -46,11 +51,12 @@ impl fmt::Display for Error {
     match self {
       Self::InvalidArgs => write!(
         f,
-        r#"Usage: syan INPUT OUTPUT
+        r#"Usage: syan INPUT [OUTPUT]
 
 Options:
   INPUT:  the input SysY source file, or a directory containing SysY source files
-  OUTPUT: the output JSON file, containing statistics of the input files"#
+  OUTPUT: the output JSON file, containing statistics of the input files
+          default to stdout"#
       ),
       Self::File(e) => write!(f, "invalid input SysY file: {}", e),
       Self::Parser(file) => write!(f, "error occurred while parsing {}", file),
@@ -65,7 +71,7 @@ struct CommandLineArgs {
   /// Input file.
   input: String,
   /// Output file.
-  output: String,
+  output: Option<String>,
 }
 
 impl CommandLineArgs {
@@ -74,7 +80,7 @@ impl CommandLineArgs {
     let mut args = env::args();
     args.next();
     match (args.next(), args.next()) {
-      (Some(input), Some(output)) => Ok(Self { input, output }),
+      (Some(input), output) => Ok(Self { input, output }),
       _ => Err(Error::InvalidArgs),
     }
   }
