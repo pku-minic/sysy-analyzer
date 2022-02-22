@@ -430,6 +430,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sysy-analyzer"
+version = "0.0.1"
+dependencies = [
+ "lalrpop",
+ "lalrpop-util",
+ "regex",
+ "rlua",
+]
+
+[[package]]
 name = "term"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -438,16 +448,6 @@ dependencies = [
  "dirs-next",
  "rustversion",
  "winapi",
-]
-
-[[package]]
-name = "test-case-classifier"
-version = "0.0.1"
-dependencies = [
- "lalrpop",
- "lalrpop-util",
- "regex",
- "rlua",
 ]
 
 [[package]]

@@ -1,10 +1,10 @@
 [package]
-name = "test-case-classifier"
+name = "sysy-analyzer"
 version = "0.0.1"
 edition = "2021"
 
 [[bin]]
-name = "tcclass"
+name = "syan"
 path = "src/main.rs"
 
 [build-dependencies]
