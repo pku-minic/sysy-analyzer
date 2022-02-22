@@ -1,6 +1,6 @@
 # sysy-analyzer
 
-A simple SysY program analyzer, currently supports only lexical/grammar analyzing.
+A simple SysY program analyzer, currently supports only lexical/grammar analysis.
 
 ## Usage
 
