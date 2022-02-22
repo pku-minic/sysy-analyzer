@@ -1,8 +1,62 @@
 use serde::Serialize;
+use std::cmp::Ordering;
+use std::collections::BTreeSet;
 
-/// Statistics about a SysY program.
-#[derive(Default, Serialize)]
+/// Statistics table.
+#[derive(Serialize, Default)]
 pub struct Statistics {
+  statistics: BTreeSet<StatisticsEntry>,
+}
+
+impl Statistics {
+  /// Creates a new statistics table.
+  pub fn new() -> Self {
+    Self::default()
+  }
+
+  /// Adds a new entry to the statistics table.
+  pub fn add(&mut self, file: String, stat: FileStatistics) {
+    self.statistics.insert(StatisticsEntry { file, stat });
+  }
+
+  /// Extends the statistics table with the given statistics.
+  pub fn extend(&mut self, stats: Statistics) {
+    self.statistics.extend(stats.statistics);
+  }
+}
+
+/// Entry of a statistics table.
+#[derive(Serialize)]
+pub struct StatisticsEntry {
+  /// File name.
+  file: String,
+  /// Statistics.
+  stat: FileStatistics,
+}
+
+impl PartialEq for StatisticsEntry {
+  fn eq(&self, other: &Self) -> bool {
+    self.file == other.file
+  }
+}
+
+impl Eq for StatisticsEntry {}
+
+impl PartialOrd for StatisticsEntry {
+  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    Some(self.file.cmp(&other.file))
+  }
+}
+
+impl Ord for StatisticsEntry {
+  fn cmp(&self, other: &Self) -> Ordering {
+    self.file.cmp(&other.file)
+  }
+}
+
+/// Statistics of a SysY source file.
+#[derive(Default, Serialize)]
+pub struct FileStatistics {
   /// Lexical statistics.
   pub lexical: LexicalStatistics,
   /// Grammar statistics.
