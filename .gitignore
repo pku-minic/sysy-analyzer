@@ -1,0 +1,8 @@
+# Cargo
+/target
+
+# macOS
+*.DS_Store
+
+# debugging
+debug
