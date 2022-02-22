@@ -1,3 +1,4 @@
+use crate::error::Error;
 use lalrpop_util::lalrpop_mod;
 
 lalrpop_mod! {
@@ -106,4 +107,14 @@ pub struct GrammarStatistics {
   pub lor_exprs: usize,
   /// Number of constant expressions.
   pub const_exprs: usize,
+}
+
+/// Parses the given SysY program.
+/// Returns statistics about the program.
+pub fn parse(program: &str) -> Result<Statistics, Error> {
+  let mut stats = Statistics::default();
+  sysy::CompUnitParser::new()
+    .parse(&mut stats, program)
+    .map_err(|_| Error::Parser)?;
+  Ok(stats)
 }
