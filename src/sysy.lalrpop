@@ -1,6 +1,6 @@
-use crate::statistics::Statistics;
+use crate::statistics::FileStatistics;
 
-grammar(stat: &mut Statistics);
+grammar(stat: &mut FileStatistics);
 
 match {
   r"\s*" => {},
