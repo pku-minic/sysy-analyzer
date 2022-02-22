@@ -25,7 +25,9 @@ CLASSIFIER = [
      or x['grammar']['int_func_defs'] > 1 or x['grammar']['func_calls']),
     ('全局量', lambda x: x['grammar']['const_decls'] +
      x['grammar']['var_decls'] > x['grammar']['local_decls']),
-    ('参数', lambda x: x['grammar']['func_params_max']
+    ('参数', lambda x: x['grammar']['func_params']
+     or x['grammar']['func_array_params']),
+    ('复杂参数', lambda x: x['grammar']['func_params_max']
      > 4 or x['grammar']['func_array_params']),
     ('数组', lambda x: x['grammar']['const_array_defs'] or x['grammar']
      ['var_array_defs'] or x['grammar']['func_array_params'] or
