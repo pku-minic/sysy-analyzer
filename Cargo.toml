@@ -7,4 +7,9 @@ edition = "2021"
 name = "tcclass"
 path = "src/main.rs"
 
+[build-dependencies]
+lalrpop = "0.19.7"
+
 [dependencies]
+lalrpop-util = { version = "0.19.7", features = ["lexer"] }
+regex = "1"
