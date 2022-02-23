@@ -15,6 +15,7 @@ CLASSIFIER = [
     ('逻辑运算', lambda x: x['grammar']['land_exprs']
      or x['grammar']['lor_exprs']),
     ('常量', lambda x: x['grammar']['const_decls']),
+    ('常量求值', lambda x: x['grammar']['const_exprs']),
     ('变量', lambda x: x['grammar']['var_decls']),
     ('赋值', lambda x: x['grammar']['assign_stmts']),
     ('语句块', lambda x: x['grammar']['block_stmts']),
@@ -28,10 +29,12 @@ CLASSIFIER = [
     ('参数', lambda x: x['grammar']['func_params']
      or x['grammar']['func_array_params']),
     ('复杂参数', lambda x: x['grammar']['func_params_max']
-     > 4 or x['grammar']['func_array_params']),
+     > 8 or x['grammar']['func_array_params']),
     ('数组', lambda x: x['grammar']['const_array_defs'] or x['grammar']
      ['var_array_defs'] or x['grammar']['func_array_params'] or
      x['grammar']['array_accesses']),
+    ('初始化列表', lambda x: x['grammar']['const_init_lists']
+     or x['grammar']['var_init_lists']),
 ]
 
 
@@ -61,7 +64,7 @@ def print_table(data):
 
 if __name__ == '__main__':
   import sys
-  if len(sys.argv) != 2:
+  if len(sys.argv) < 2:
     data = json.load(sys.stdin)
   else:
     with open(sys.argv[1], 'r') as f:
